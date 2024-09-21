@@ -78,15 +78,15 @@ import reactor.core.publisher.Mono;
 public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcessor<T> implements CapabilityImplementingProcessor {
     public static final boolean RETURN_SUBSCRIBED = true;
     public static final boolean RETURN_NON_EXISTENT = true;
-    private static final Logger LOGGER = LoggerFactory.getLogger(ListProcessor.class);
-    private static final List<Capability> CAPA = ImmutableList.of(
+    protected static final Logger LOGGER = LoggerFactory.getLogger(ListProcessor.class);
+    protected static final List<Capability> CAPA = ImmutableList.of(
         Capability.of("LIST-EXTENDED"),
         Capability.of("LIST-STATUS"),
         Capability.of("LIST-MYRIGHTS"),
         Capability.of("SPECIAL-USE"));
 
-    private final SubscriptionManager subscriptionManager;
-    private final StatusProcessor statusProcessor;
+    protected final SubscriptionManager subscriptionManager;
+    protected final StatusProcessor statusProcessor;
     protected final MailboxTyper mailboxTyper;
 
     @Inject
@@ -136,7 +136,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
             .then();
     }
 
-    private Mono<Void> respond(ImapSession session, Responder responder, T request, MailboxSession mailboxSession) {
+    protected Mono<Void> respond(ImapSession session, Responder responder, T request, MailboxSession mailboxSession) {
         if (request.getMailboxPattern().length() == 0) {
             return Mono.fromRunnable(() -> respondNamespace(request.getBaseReferenceName(), responder, mailboxSession));
         } else {
@@ -150,7 +150,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
             !RETURN_NON_EXISTENT, EnumSet.noneOf(ListResponse.ChildInfo.class), type);
     }
 
-    private void respondNamespace(String referenceName, Responder responder, MailboxSession mailboxSession) {
+    protected void respondNamespace(String referenceName, Responder responder, MailboxSession mailboxSession) {
         // An empty mailboxName signifies a request for the hierarchy
         // delimiter and root name of the referenceName argument
         String referenceRoot = ModifiedUtf7.decodeModifiedUTF7(computeReferenceRoot(referenceName, mailboxSession));
@@ -164,7 +164,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
             !RETURN_SUBSCRIBED));
     }
 
-    private String computeReferenceRoot(String referenceName, MailboxSession mailboxSession) {
+    protected String computeReferenceRoot(String referenceName, MailboxSession mailboxSession) {
         if (referenceName.length() > 0 && referenceName.charAt(0) == MailboxConstants.NAMESPACE_PREFIX_CHAR) {
             // A qualified reference name - get the root element
             int firstDelimiter = referenceName.indexOf(mailboxSession.getPathDelimiter());
@@ -180,7 +180,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
         }
     }
 
-    private Mono<Void> respondMailboxList(T request, ImapSession session,
+    protected Mono<Void> respondMailboxList(T request, ImapSession session,
                                           Responder responder, MailboxSession mailboxSession) {
         if (request.selectRemote()) {
             // https://www.rfc-editor.org/rfc/rfc5258.html. NOT YET SUPPORT `REMOTE`
@@ -211,7 +211,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
         }
     }
 
-    private Mono<Void> processWithoutSubscribed(ImapSession session, T request, Responder responder, MailboxSession mailboxSession,
+    protected Mono<Void> processWithoutSubscribed(ImapSession session, T request, Responder responder, MailboxSession mailboxSession,
                                                 boolean isRelative, MailboxQuery mailboxQuery, Predicate<MailboxPath> isSubscribed) {
         return getMailboxManager().search(mailboxQuery, Minimal, mailboxSession)
             .doOnNext(metaData -> {
@@ -231,7 +231,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
             .then();
     }
 
-    private MessageManager retrieveMessageManager(MailboxMetaData metaData, MailboxSession mailboxSession) {
+    protected MessageManager retrieveMessageManager(MailboxMetaData metaData, MailboxSession mailboxSession) {
         try {
             return getMailboxManager().getMailbox(metaData.getMailbox(), mailboxSession);
         } catch (MailboxException e) {
@@ -239,7 +239,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
         }
     }
 
-    private Mono<Void> processWithSubscribed(ImapSession session, T request, Responder responder, MailboxSession mailboxSession, boolean isRelative, MailboxQuery mailboxQuery) {
+    protected Mono<Void> processWithSubscribed(ImapSession session, T request, Responder responder, MailboxSession mailboxSession, boolean isRelative, MailboxQuery mailboxQuery) {
         return Mono.zip(getMailboxManager().search(mailboxQuery, Minimal, mailboxSession).collectList()
                     .map(searchedResultList -> searchedResultList.stream().collect(Collectors.toMap(MailboxMetaData::getPath, Function.identity()))),
                 Flux.from(Throwing.supplier(() -> subscriptionManager.subscriptionsReactive(mailboxSession)).get()).collectList())
@@ -251,7 +251,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
             .then();
     }
 
-    private Mono<MailboxStatusResponse> sendStatusWhenSubscribed(ImapSession session, T request, Responder responder, MailboxSession mailboxSession,
+    protected Mono<MailboxStatusResponse> sendStatusWhenSubscribed(ImapSession session, T request, Responder responder, MailboxSession mailboxSession,
                                                                  Triple<MailboxPath, ListResponse, Optional<MailboxMetaData>> pathAndResponse) {
         return pathAndResponse.getRight()
             .map(metaData -> retrieveMessageManager(metaData, mailboxSession))
@@ -260,7 +260,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
             .orElse(Mono.empty());
     }
 
-    private List<Triple<MailboxPath, ListResponse, Optional<MailboxMetaData>>> getListResponseForSelectSubscribed(ImapSession session, Map<MailboxPath, MailboxMetaData> searchedResultMap, List<MailboxPath> allSubscribedSearch,
+    protected List<Triple<MailboxPath, ListResponse, Optional<MailboxMetaData>>> getListResponseForSelectSubscribed(ImapSession session, Map<MailboxPath, MailboxMetaData> searchedResultMap, List<MailboxPath> allSubscribedSearch,
                                                                                      ListRequest listRequest, MailboxSession mailboxSession, boolean relative, MailboxQuery mailboxQuery) {
         ImmutableList.Builder<Triple<MailboxPath, ListResponse, Optional<MailboxMetaData>>> responseBuilders = ImmutableList.builder();
         List<Pair<MailboxPath, ListResponse>> listRecursiveMatch = listRecursiveMatch(session, searchedResultMap, allSubscribedSearch, mailboxSession, relative, listRequest);
@@ -278,7 +278,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
         return responseBuilders.build();
     }
 
-    private Pair<MailboxPath, ListResponse> buildListResponse(ListRequest listRequest, Map<MailboxPath, MailboxMetaData> searchedResultMap, ImapSession session, boolean relative, MailboxPath subscribed) {
+    protected Pair<MailboxPath, ListResponse> buildListResponse(ListRequest listRequest, Map<MailboxPath, MailboxMetaData> searchedResultMap, ImapSession session, boolean relative, MailboxPath subscribed) {
         return Pair.of(subscribed, Optional.ofNullable(searchedResultMap.get(subscribed))
             .map(mailboxMetaData -> ListResponse.builder()
                 .returnSubscribed(RETURN_SUBSCRIBED)
@@ -290,7 +290,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
             .build());
     }
 
-    private List<Pair<MailboxPath, ListResponse>> listRecursiveMatch(ImapSession session, Map<MailboxPath, MailboxMetaData> searchedResultMap,
+    protected List<Pair<MailboxPath, ListResponse>> listRecursiveMatch(ImapSession session, Map<MailboxPath, MailboxMetaData> searchedResultMap,
                                                                      List<MailboxPath> allSubscribedSearch, MailboxSession mailboxSession,
                                                                      boolean relative, ListRequest listRequest) {
         if (!listRequest.getSelectOptions().contains(RECURSIVEMATCH)) {
@@ -317,14 +317,14 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
             .collect(Collectors.toList());
     }
 
-    private void respondMyRights(T request, Responder responder, MailboxSession mailboxSession, MailboxMetaData metaData) {
+    protected void respondMyRights(T request, Responder responder, MailboxSession mailboxSession, MailboxMetaData metaData) {
         if (request.getReturnOptions().contains(ListRequest.ListReturnOption.MYRIGHTS)) {
             MyRightsResponse myRightsResponse = new MyRightsResponse(metaData.getPath().getName(), getRfc4314Rights(mailboxSession, metaData));
             responder.respond(myRightsResponse);
         }
     }
 
-    private MailboxACL.Rfc4314Rights getRfc4314Rights(MailboxSession mailboxSession, MailboxMetaData metaData) {
+    protected MailboxACL.Rfc4314Rights getRfc4314Rights(MailboxSession mailboxSession, MailboxMetaData metaData) {
         if (metaData.getPath().belongsTo(mailboxSession)) {
             return MailboxACL.FULL_RIGHTS;
         }
@@ -332,7 +332,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
         return metaData.getResolvedAcls().getEntries().get(entryKey);
     }
 
-    private MailboxQuery mailboxQuery(MailboxPath basePath, String mailboxName, MailboxSession mailboxSession) {
+    protected MailboxQuery mailboxQuery(MailboxPath basePath, String mailboxName, MailboxSession mailboxSession) {
         if (basePath.getNamespace().equals(MailboxConstants.USER_NAMESPACE)
             && basePath.getUser().equals(mailboxSession.getUser())
             && basePath.getName().isEmpty()
@@ -353,7 +353,7 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
             .build();
     }
 
-    private MailboxPath computeBasePath(ImapSession session, String finalReferencename, boolean isRelative) {
+    protected MailboxPath computeBasePath(ImapSession session, String finalReferencename, boolean isRelative) {
         String decodedName = ModifiedUtf7.decodeModifiedUTF7(finalReferencename);
         if (isRelative) {
             return MailboxPath.forUser(session.getUserName(), decodedName);
