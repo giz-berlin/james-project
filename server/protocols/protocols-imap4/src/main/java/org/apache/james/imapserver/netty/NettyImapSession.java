@@ -312,7 +312,7 @@ public class NettyImapSession implements ImapSession, NettyConstants {
 
     @Override
     public boolean supportMultipleNamespaces() {
-        return false;
+        return true;
     }
 
     @Override

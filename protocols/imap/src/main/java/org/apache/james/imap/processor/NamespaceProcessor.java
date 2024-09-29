@@ -72,10 +72,8 @@ public class NamespaceProcessor extends AbstractMailboxProcessor<NamespaceReques
      */
     private List<NamespaceResponse.Namespace> buildPersonalNamespaces(MailboxSession mailboxSession, ImapSession session) {
         final List<NamespaceResponse.Namespace> personalSpaces = new ArrayList<>();
+        // Don't use the namespace prefix for personal namespaces. We always use the personal namespace if no namespace is given (e.g. when using relative paths).
         String personal = "";
-        if (session.supportMultipleNamespaces()) {
-            personal = mailboxSession.getPersonalSpace();
-        }
         personalSpaces.add(new NamespaceResponse.Namespace(personal, mailboxSession.getPathDelimiter()));
         return personalSpaces;
     }

@@ -198,7 +198,7 @@ public class FakeImapSession implements ImapSession {
 
     @Override
     public boolean supportMultipleNamespaces() {
-        return false;
+        return true;
     }
 
     @Override
