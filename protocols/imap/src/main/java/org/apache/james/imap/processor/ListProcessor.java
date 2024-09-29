@@ -59,6 +59,7 @@ import org.apache.james.mailbox.model.MailboxACL;
 import org.apache.james.mailbox.model.MailboxConstants;
 import org.apache.james.mailbox.model.MailboxMetaData;
 import org.apache.james.mailbox.model.MailboxPath;
+import org.apache.james.mailbox.model.search.MailboxNameExpression;
 import org.apache.james.mailbox.model.search.MailboxQuery;
 import org.apache.james.mailbox.model.search.PrefixedRegex;
 import org.apache.james.mailbox.model.search.Wildcard;
@@ -193,12 +194,14 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
         if (request.getMailboxPattern().charAt(0) == MailboxConstants.NAMESPACE_PREFIX_CHAR) {
             finalReferencename = "";
         }
+
+        final String combinedPattern = finalReferencename + request.getMailboxPattern();
+
         // Is the interpreted (combined) pattern relative?
         // Should the namespace section be returned or not?
-        boolean isRelative = ((finalReferencename + request.getMailboxPattern()).charAt(0) != MailboxConstants.NAMESPACE_PREFIX_CHAR);
+        boolean isRelative = (combinedPattern.charAt(0) != MailboxConstants.NAMESPACE_PREFIX_CHAR);
 
-        MailboxQuery mailboxQuery = mailboxQuery(computeBasePath(session, finalReferencename, isRelative),
-            request.getMailboxPattern(), mailboxSession);
+        MailboxQuery mailboxQuery = mailboxQuery(computePath(session, finalReferencename, request.getMailboxPattern(), isRelative), mailboxSession);
 
         if (request.selectSubscribed()) {
             return processWithSubscribed(session, request, responder, mailboxSession, isRelative, mailboxQuery);
@@ -332,29 +335,22 @@ public class ListProcessor<T extends ListRequest> extends AbstractMailboxProcess
         return metaData.getResolvedAcls().getEntries().get(entryKey);
     }
 
-    private MailboxQuery mailboxQuery(MailboxPath basePath, String mailboxName, MailboxSession mailboxSession) {
-        if (basePath.getNamespace().equals(MailboxConstants.USER_NAMESPACE)
-            && basePath.getUser().equals(mailboxSession.getUser())
-            && basePath.getName().isEmpty()
-            && mailboxName.equals("*")) {
-
-            return MailboxQuery.builder()
-                .userAndNamespaceFrom(basePath)
-                .expression(Wildcard.INSTANCE)
-                .build();
+    protected MailboxQuery mailboxQuery(MailboxPath path, MailboxSession mailboxSession) {
+        MailboxNameExpression name;
+        if (path.getName().equals("*")) {
+            name = Wildcard.INSTANCE;
+        } else {
+            name = new PrefixedRegex("", ModifiedUtf7.decodeModifiedUTF7(path.getName()), mailboxSession.getPathDelimiter());
         }
 
         return MailboxQuery.builder()
-            .userAndNamespaceFrom(basePath)
-            .expression(new PrefixedRegex(
-                basePath.getName(),
-                ModifiedUtf7.decodeModifiedUTF7(mailboxName),
-                mailboxSession.getPathDelimiter()))
+            .userAndNamespaceFrom(path)
+            .expression(name)
             .build();
     }
 
-    private MailboxPath computeBasePath(ImapSession session, String finalReferencename, boolean isRelative) {
-        String decodedName = ModifiedUtf7.decodeModifiedUTF7(finalReferencename);
+    protected MailboxPath computePath(ImapSession session, String finalReferencename, String mailboxPattern, boolean isRelative) {
+        String decodedName = ModifiedUtf7.decodeModifiedUTF7(finalReferencename + mailboxPattern);
         if (isRelative) {
             return MailboxPath.forUser(session.getUserName(), decodedName);
         } else {

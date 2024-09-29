@@ -371,12 +371,10 @@ public abstract class AbstractMailboxProcessor<R extends ImapRequest> extends Ab
         if (mailboxPath.getNamespace() != null && !mailboxPath.getNamespace().equals("")) {
             sb.append(mailboxPath.getNamespace());
         }
-        if (mailboxPath.getUser() != null && !mailboxPath.getUser().equals("")) {
-            if (sb.length() > 0) {
-                sb.append(delimiter);
-            }
-            sb.append(mailboxPath.getUser().asString());
-        }
+
+        // We don't want the owner name in the mailbox path. This assumes that the owner is always identifiable.
+        // For Mailboxes in the #private namespace, it is the current user, for mailboxes in #TeamMailboxes, it is "team-mailbox@<domain>".
+
         if (mailboxPath.getName() != null && !mailboxPath.getName().equals("")) {
             if (sb.length() > 0) {
                 sb.append(delimiter);

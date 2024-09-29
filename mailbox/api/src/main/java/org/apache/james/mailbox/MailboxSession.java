@@ -19,7 +19,6 @@
 
 package org.apache.james.mailbox;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -113,7 +112,7 @@ public class MailboxSession {
 
     public MailboxSession(SessionId sessionId, Username userName, Optional<Username> loggedInUser,
                                 List<Locale> localePreferences, char pathSeparator, SessionType type) {
-        this(sessionId, userName, loggedInUser, localePreferences, new ArrayList<>(), null, pathSeparator, type);
+        this(sessionId, userName, loggedInUser, localePreferences, List.of("#TeamMailbox"), null, pathSeparator, type);
     }
 
     public MailboxSession(SessionId sessionId, Username userName, Optional<Username> loggedInUser,

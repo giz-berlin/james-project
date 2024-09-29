@@ -78,13 +78,13 @@ public class PathConverter {
         if (namespace.equals(MailboxConstants.USER_NAMESPACE)) {
             return session.getUserName();
         }
+        if (namespace.equals("#TeamMailbox")) {
+            return Username.fromLocalPartWithDomain("team-mailbox", this.session.getUserName().getDomainPart().get());
+        }
         throw new DeniedAccessOnSharedMailboxException();
     }
 
     private MailboxPath buildMailboxPath(String namespace, Username user, String mailboxName) {
-        if (!namespace.equals(MailboxConstants.USER_NAMESPACE)) {
-            throw new DeniedAccessOnSharedMailboxException();
-        }
         return new MailboxPath(namespace, user, sanitizeMailboxName(mailboxName));
     }
 
