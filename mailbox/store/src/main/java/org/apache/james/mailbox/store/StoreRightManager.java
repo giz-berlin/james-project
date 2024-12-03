@@ -212,7 +212,8 @@ public class StoreRightManager implements RightManager {
     }
 
     private void assertSharesBelongsToUserDomain(Username user, ACLCommand mailboxACLCommand) throws DifferentDomainException {
-        assertSharesBelongsToUserDomain(user, ImmutableMap.of(mailboxACLCommand.getEntryKey(), mailboxACLCommand.getRights()));
+        // FIXME: whether assertion is checked should depend on configuration
+        // assertSharesBelongsToUserDomain(user, ImmutableMap.of(mailboxACLCommand.getEntryKey(), mailboxACLCommand.getRights()));
     }
 
     public boolean isReadWrite(MailboxSession session, Mailbox mailbox, Flags sharedPermanentFlags) {
@@ -263,7 +264,7 @@ public class StoreRightManager implements RightManager {
 
     @Override
     public void setRights(MailboxPath mailboxPath, MailboxACL mailboxACL, MailboxSession session) throws MailboxException {
-        assertSharesBelongsToUserDomain(mailboxPath.getUser(), mailboxACL.getEntries());
+        // assertSharesBelongsToUserDomain(mailboxPath.getUser(), mailboxACL.getEntries());
 
         MailboxMapper mapper = mailboxSessionMapperFactory.getMailboxMapper(session);
         block(mapper.findMailboxByPath(mailboxPath)
@@ -341,11 +342,11 @@ public class StoreRightManager implements RightManager {
      * We need this when creating a mailbox, to copy the ACL of the parent mailbox for all users.
      */
     public Mono<Void> setRightsReactiveWithoutAccessControl(MailboxPath mailboxPath, MailboxACL mailboxACL, MailboxSession session) {
-        try {
-            assertSharesBelongsToUserDomain(mailboxPath.getUser(), mailboxACL.getEntries());
-        } catch (DifferentDomainException e) {
-            return Mono.error(e);
-        }
+//        try {
+//            assertSharesBelongsToUserDomain(mailboxPath.getUser(), mailboxACL.getEntries());
+//        } catch (DifferentDomainException e) {
+//            return Mono.error(e);
+//        }
         MailboxMapper mapper = mailboxSessionMapperFactory.getMailboxMapper(session);
         return mapper.findMailboxByPath(mailboxPath)
             .flatMap(Throwing.<Mailbox, Mono<Void>>function(mailbox -> setRights(mailboxACL, mapper, mailbox, session)).sneakyThrow());
