@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public class FileIntoAction implements MailAction {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileIntoAction.class);
 
-    private static final char HIERARCHY_DELIMITER = '.';
+    private static final char HIERARCHY_DELIMITER = '/';
 
     @Override
     public void execute(Action action, Mail mail, ActionContext context) throws MessagingException {

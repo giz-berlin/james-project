@@ -33,7 +33,8 @@ public interface MailboxConstants {
     String USER_NAMESPACE = NAMESPACE_PREFIX_CHAR + "private";
 
     /** The default delimiter used to seperated parent/child folders */
-    char DEFAULT_DELIMITER = '.';
+    // FIXME: make configurable somehow
+    char DEFAULT_DELIMITER = '/';
 
     /** The name of the INBOX */
     String INBOX = "INBOX";
